@@ -1,0 +1,21 @@
+export type Platform = {
+  id:string; name:string; shortName:string; region:'domestic'|'global';
+  category:'article'|'social'|'video'; color:string; description:string;
+  titleLimit:number; bodyLimit:number; formats:string[]; postizId?:string;
+  multipostId?:string; wechatsyncId?:string; requiredMedia?:'image'|'video'|'any';
+  recommendedTone:string; notes:string[];
+};
+export type Profile = {id:string;name:string;audience:string;tone:string;language:string;description:string;forbiddenWords:string[];updatedAt:string};
+export type Media = {id:string;name:string;url:string;mime:string;size:number};
+export type Content = {id:string;title:string;source:string;profileId?:string;media:Media[];createdAt:string;updatedAt:string};
+export type Issue = {severity:'error'|'warning';message:string};
+export type Variant = {id:string;contentId:string;platformId:string;title:string;body:string;tags:string[];thread:string[];html?:string;source:'rules'|'ai'|'manual';issues:Issue[];approved:boolean;updatedAt:string;sourceRevision?:string};
+export type ConnectionPrivate = {id:string;name:string;platformId:string;connector:string;enabled:boolean;config:Record<string,string>};
+export type Connection = ConnectionPrivate & {configured:boolean;secretKeys:string[];createdAt:string;lastTest?:{at:string;ok:boolean;message:string;scope:'configuration'|'credentials'}};
+export type JobStatus = 'queued'|'scheduled'|'running'|'published'|'drafted'|'failed'|'unconfirmed'|'needs_action'|'cancelled';
+export type Job = {id:string;batchId:string;contentId:string;variantId:string;connectionId:string;platformId:string;connectionName:string;title:string;status:JobStatus;scheduledAt:string;attempts:number;message:string;remoteId?:string;url?:string;createdAt:string;updatedAt:string;snapshot:Variant;media:Media[]};
+export type Settings = {generation:{enabled:boolean;baseUrl:string;model:string;hasApiKey:boolean};timezone:string};
+export type ConnectorDefinition = {id:string;name:string;description:string;platformIds:string[];fields:{key:string;label:string;secret?:boolean;placeholder?:string;help?:string;required?:boolean}[];mode:'publish'|'draft'|'bridge'|'custom'};
+export type PublishResult = {status:'published'|'drafted'|'unconfirmed'|'needs_action';message:string;remoteId?:string;url?:string};
+export type PublishContext = {publicBaseUrl:string;readMedia:(media:Media)=>Promise<Uint8Array>;localMediaPath?:(media:Media)=>string;signal?:AbortSignal};
+export type Bootstrap = {platforms:Platform[];profiles:Profile[];contents:Content[];variants:Variant[];connections:Connection[];jobs:Job[];settings:Settings;connectorDefinitions:ConnectorDefinition[]};
