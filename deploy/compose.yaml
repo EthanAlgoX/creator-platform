@@ -1,0 +1,34 @@
+services:
+  app:
+    image: ${CREATOR_IMAGE:-creator-platform:latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      CREATOR_REMOTE_MODE: "1"
+      CREATOR_DATA_DIR: /data
+      HOST: 0.0.0.0
+      PORT: "4318"
+    ports:
+      - "127.0.0.1:${CREATOR_PORT:-4319}:4318"
+    volumes:
+      - "${CREATOR_DATA_PATH:-/opt/creator-platform/data}:/data"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    cpus: "1.0"
+    pids_limit: 128
+    stop_grace_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,4 +1,5 @@
 import type { Media, Platform, Variant } from '../server/types.js';
+import { mediaUrl } from './src/urls';
 
 /** MultiPost's public page-message API. A receipt is a browser handoff, not a post. */
 type Envelope = {
@@ -105,7 +106,7 @@ function bodyHtml(body: string): string {
 }
 
 function file(item: Media) {
-  const url = new URL(item.url, window.location.origin);
+  const url = new URL(mediaUrl(item.url), window.location.origin);
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new BridgeError('素材需要可访问的 HTTP(S) 地址，请先上传素材到工作台。');
   }

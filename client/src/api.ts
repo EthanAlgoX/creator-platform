@@ -1,3 +1,5 @@
+import { appUrl } from './urls';
+
 export type {
   Bootstrap, Platform, Profile, Content, Variant, Connection, Job,
   Settings, ConnectorDefinition, Media, Issue,
@@ -7,8 +9,8 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   let response: Response;
-  try { response = await fetch(path, { ...options, headers }); }
-  catch { throw new Error('无法连接本地服务。请确认工作台服务正在运行，再重试。'); }
+  try { response = await fetch(appUrl(path), { ...options, headers }); }
+  catch { throw new Error('无法连接工作台服务。请确认服务正在运行，再重试。'); }
   const body = await response.text();
   let parsed: unknown;
   try { parsed = body ? JSON.parse(body) : {}; }

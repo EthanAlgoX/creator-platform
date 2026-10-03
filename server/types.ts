@@ -17,5 +17,5 @@ export type Job = {id:string;batchId:string;contentId:string;variantId:string;co
 export type Settings = {generation:{enabled:boolean;baseUrl:string;model:string;hasApiKey:boolean};timezone:string};
 export type ConnectorDefinition = {id:string;name:string;description:string;platformIds:string[];fields:{key:string;label:string;secret?:boolean;placeholder?:string;help?:string;required?:boolean}[];mode:'publish'|'draft'|'bridge'|'custom'};
 export type PublishResult = {status:'published'|'drafted'|'unconfirmed'|'needs_action';message:string;remoteId?:string;url?:string};
-export type PublishContext = {publicBaseUrl:string;readMedia:(media:Media)=>Promise<Uint8Array>;localMediaPath?:(media:Media)=>string;signal?:AbortSignal};
-export type Bootstrap = {platforms:Platform[];profiles:Profile[];contents:Content[];variants:Variant[];connections:Connection[];jobs:Job[];settings:Settings;connectorDefinitions:ConnectorDefinition[]};
+export type PublishContext = {publicBaseUrl:string;readMedia:(media:Media)=>Promise<Uint8Array>;localMediaPath?:(media:Media)=>string;signal?:AbortSignal;protectedMedia?:boolean};
+export type Bootstrap = {platforms:Platform[];profiles:Profile[];contents:Content[];variants:Variant[];connections:Connection[];jobs:Job[];settings:Settings;connectorDefinitions:ConnectorDefinition[];remoteMode?:boolean};

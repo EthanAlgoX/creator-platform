@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import type { Bootstrap, Connection, ConnectorDefinition, Content, Job, Profile, Settings } from './api';
 import { errorText, request, send } from './api';
+import { mediaUrl } from './urls';
 import { detectMultiPost, dispatchMultiPost } from '../bridge';
 import { ArrowLeft, ArrowRight, ChevronDown, Clock3, ExternalLink, Eye, EyeOff, Files, Link2, LoaderCircle, Pencil, Plus, RefreshCw, Search, ShieldCheck, Trash2, UserRound, X } from 'lucide-react';
 import { Badge, Button, EmptyState, ErrorMessage, Field, Modal, formatDate, jobKind, jobLabels } from './ui';
@@ -41,7 +42,7 @@ async function refreshAfterWrite(refresh: PageProps['refresh'], setError: (messa
 function safeLink(value?: string): string | undefined {
   if (!value) return;
   try {
-    const url = new URL(value, window.location.origin);
+    const url = new URL(mediaUrl(value), window.location.origin);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return;
     return url.href;
   } catch { return; }
@@ -365,6 +366,9 @@ export function QueuePage({ data, refresh, notify, onDirtyChange, navigate, glob
     await execute(job.id, async () => { const result = await send<Job>(`/api/jobs/${job.id}/retry`, {}); mark(result); setRetryJob(null); setFilter('active'); notify('已按原任务快照创建一次新的尝试。'); await afterWrite(); });
   };
   const bridge = (job: Job) => void execute(job.id, async () => {
+    if (data.remoteMode && job.media.some(media => media.url.startsWith('/uploads/'))) {
+      throw new Error('尚未交接：云端上传素材受登录认证保护，MultiPost 扩展无法直接下载。可取消此任务，在原稿中移除素材后重新创建；或选择支持直接上传文件的连接器。');
+    }
     const target = data.platforms.find(platform => platform.id === job.platformId);
     if (!target) throw new Error('未找到目标平台，请刷新列表。');
     const result = await dispatchMultiPost(target, job.snapshot, job.media);

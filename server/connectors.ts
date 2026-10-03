@@ -190,8 +190,13 @@ function textLimit(text: string, limit: number, name: string, graphemes = false)
   if (length > limit) throw new ConnectorError(`${name} 当前内容超过 ${limit} 字符，需先编辑。`);
 }
 function publicUrl(media: Media, context: PublishContext, publicRequired = false): string {
+  if(context.protectedMedia&&media.url.startsWith('/uploads/'))throw new ConnectorError('当前素材需要登录，目标服务不能直接下载，请使用支持直接文件上传的连接器。');
   let u: URL;
-  try { u = new URL(media.url, context.publicBaseUrl); } catch { throw new ConnectorError('素材地址无效。'); }
+  try {
+    const mediaBase = `${context.publicBaseUrl.replace(/\/+$/, '')}/`;
+    // Uploaded paths are internal storage identifiers; preserve an external deployment prefix.
+    u = new URL(media.url.startsWith('/uploads/') ? media.url.slice(1) : media.url, mediaBase);
+  } catch { throw new ConnectorError('素材地址无效。'); }
   if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password) throw new ConnectorError('素材需要可访问的 HTTP(S) 地址。');
   if (publicRequired && (['localhost', '127.0.0.1', '[::1]', '0.0.0.0'].includes(u.hostname) || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(u.hostname))) throw new ConnectorError('该平台需要公网素材 URL，本机或局域网上传地址不可用。请配置公网地址或使用支持文件上传的连接器。');
   return u.toString();

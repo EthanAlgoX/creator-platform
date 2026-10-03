@@ -11,6 +11,7 @@ import {stamp,uid,revision,ruleVariant,toHtml,validateVariant,isApprovedValid,sa
 import {generateAI,type GenerationConfig} from './generation.js';
 import {JobQueue,redactMessage,type ConnectorService} from './queue.js';
 import * as defaultConnectors from './connectors.js';
+import {createAccessConfig,accessMiddleware} from './access.js';
 import type {Content,Connection,ConnectionPrivate,Profile,Variant,Job,Media,Settings,Bootstrap} from './types.js';
 
 class ApiError extends Error {constructor(message:string,readonly status=400){super(message);}}
@@ -25,15 +26,13 @@ function sameConfig(left:Record<string,string>,right:Record<string,string>):bool
 function testScope(connection:ConnectionPrivate):'configuration'|'credentials' {
  return connection.connector==='multipost'||connection.connector==='webhook'&&!connection.config.healthUrl||connection.connector==='native'&&['slack','feishu','dingtalk','wecom','teams'].includes(connection.platformId)?'configuration':'credentials';
 }
-export function createApp(options:{store?:Store;connectors?:ConnectorService;publicBaseUrl?:string;startQueue?:boolean}={}){
+export function createApp(options:{store?:Store;connectors?:ConnectorService;publicBaseUrl?:string;startQueue?:boolean;remoteMode?:boolean;proxyToken?:string;staticDir?:string}={}){
+ const suppliedBaseUrl=options.publicBaseUrl??process.env.PUBLIC_BASE_URL;
+ const access=createAccessConfig({remoteMode:options.remoteMode??process.env.CREATOR_REMOTE_MODE==='1',publicBaseUrl:suppliedBaseUrl,proxyToken:options.proxyToken??process.env.CREATOR_PROXY_TOKEN});
  const store=options.store||new Store();const service=options.connectors||defaultConnectors;
  const app=express();app.disable('x-powered-by');
- const publicBaseUrl=options.publicBaseUrl||process.env.PUBLIC_BASE_URL||`http://127.0.0.1:${process.env.PORT||4318}`;
- app.use((req,res,next)=>{
-  try{const host=new URL(`http://${req.headers.host||''}`);if(!['localhost','127.0.0.1','[::1]'].includes(host.hostname)||host.username||host.password||host.pathname!=='/'||host.search||host.hash)throw 0;}catch{res.status(403).json({error:'本地工作台拒绝非本机 Host'});return;}
-  const origin=req.headers.origin;if(origin){try{const url=new URL(origin);if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)){res.status(403).json({error:'本地工作台拒绝跨站请求'});return;}}catch{res.status(403).json({error:'Origin 无效'});return;}}
-  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');next();
- });
+ const publicBaseUrl=suppliedBaseUrl||`http://127.0.0.1:${process.env.PORT||4318}`;
+ app.use(accessMiddleware(access));
  app.use('/api',express.json({limit:'2mb'}));
  app.use('/uploads',express.static(store.uploadDir,{dotfiles:'deny',index:false,setHeaders:res=>{res.setHeader('Content-Security-Policy',"default-src 'none'; sandbox");}}));
  const get=<T>(kind:string,value:string):T=>{const saved=store.get<T>(kind,value);if(!saved)throw new ApiError('记录不存在',404);return saved;};
@@ -43,10 +42,10 @@ export function createApp(options:{store?:Store;connectors?:ConnectorService;pub
  const generationPrivate=():GenerationConfig=>store.getSecret<GenerationConfig>('generation')||{enabled:false,baseUrl:'',model:'',apiKey:''};
  const settings=():Settings=>{const {apiKey,...generation}=generationPrivate();return {generation:{...generation,hasApiKey:!!apiKey},timezone:store.get<{id:string;timezone:string}>('setting','local')?.timezone||'Asia/Shanghai'};};
  const currentProfile=(content:Content)=>content.profileId?store.get<Profile>('profile',content.profileId):undefined;
- const queue=new JobQueue(store,platforms,service,rawConnection,publicBaseUrl);
+ const queue=new JobQueue(store,platforms,service,rawConnection,publicBaseUrl,access.remoteMode);
  if(options.startQueue!==false)queue.start();
  app.get('/api/health',(_req,res)=>res.json({ok:true}));
- app.get('/api/bootstrap',(_req,res)=>{const bootstrap:Bootstrap={platforms,profiles:store.list<Profile>('profile'),contents:store.list<Content>('content'),variants:store.list<Variant>('variant'),connections:store.list<StoredConnection>('connection').map(publicConnection),jobs:store.list<Job>('job'),settings:settings(),connectorDefinitions:service.getConnectorDefinitions(platforms)};res.json(bootstrap);});
+ app.get('/api/bootstrap',(_req,res)=>{const bootstrap:Bootstrap={platforms,profiles:store.list<Profile>('profile'),contents:store.list<Content>('content'),variants:store.list<Variant>('variant'),connections:store.list<StoredConnection>('connection').map(publicConnection),jobs:store.list<Job>('job'),settings:settings(),connectorDefinitions:service.getConnectorDefinitions(platforms),remoteMode:access.remoteMode};res.json(bootstrap);});
  app.post('/api/contents',(req,res)=>{const data=contentSchema.parse(req.body);if(data.profileId&&!store.get('profile',data.profileId))throw new ApiError('创作画像不存在');const now=stamp();const content:Content={...data,id:uid(),media:safeMedia(data.media||[],store.list<Media>('media')),profileId:data.profileId||undefined,createdAt:now,updatedAt:now};store.put('content',content);res.status(201).json(content);});
  app.put('/api/contents/:id',(req,res)=>{const old=get<Content>('content',String(req.params.id));const data=contentSchema.parse(req.body);if(data.profileId&&!store.get('profile',data.profileId))throw new ApiError('创作画像不存在');const content:Content={...old,...data,profileId:data.profileId||undefined,media:safeMedia(data.media||[],store.list<Media>('media')),updatedAt:stamp()};store.transaction(()=>{store.put('content',content);if(revision(content)!==revision(old))for(const variant of store.list<Variant>('variant').filter(v=>v.contentId===old.id)){variant.approved=false;variant.issues=validateVariant(variant,platformById(variant.platformId),content,currentProfile(content));store.put('variant',variant);}});res.json(content);});
  app.delete('/api/contents/:id',(req,res)=>{const content=get<Content>('content',String(req.params.id));if(store.list<Job>('job').some(j=>j.contentId===content.id&&activeStates.includes(j.status)))throw new ApiError('该内容还有待处理的发布任务，请先处理或取消任务',409);store.transaction(()=>{store.remove('content',content.id);for(const v of store.list<Variant>('variant').filter(v=>v.contentId===content.id))store.remove('variant',v.id);});res.json({ok:true});});
@@ -116,7 +115,8 @@ export function createApp(options:{store?:Store;connectors?:ConnectorService;pub
  app.get('/api/contents/:id/export',(req,res)=>{const content=get<Content>('content',String(req.params.id));const platformId=String(req.query.platformId||'');const variant=store.list<Variant>('variant').find(v=>v.contentId===content.id&&v.platformId===platformId);if(!variant)throw new ApiError('内容版本不存在',404);const format=String(req.query.format||'markdown');if(!['markdown','html','json'].includes(format))throw new ApiError('不支持的导出格式');const ext=format==='markdown'?'md':format;res.setHeader('Content-Disposition',`attachment; filename="${variant.platformId}-${content.id}.${ext}"`);if(format==='json'){res.json(variant);return;}if(format==='html'){res.type('html').send(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>${sanitizeTitle(variant.title)}</title><body><article style="max-width:680px;margin:auto;padding:24px;">${toHtml(`# ${variant.title}\n\n${variant.body}`)}</article></body></html>`);return;}res.type('text/markdown').send(`# ${variant.title}\n\n${variant.thread.length?variant.thread.join('\n\n---\n\n'):variant.body}`);});
  const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:25*1024*1024,files:1}});
  app.post('/api/uploads',upload.single('file'),async(req,res)=>{const file=req.file;if(!file)throw new ApiError('请上传一个文件');const detected=detectMedia(file.buffer);if(!detected)throw new ApiError('只支持 PNG、JPEG、WebP、GIF、MP4 或 PDF 文件');const value=uid();const filename=`${value}.${detected.ext}`;await writeFile(join(store.uploadDir,filename),file.buffer,{mode:0o600,flag:'wx'});const media:Media={id:value,name:file.originalname.replace(/[\r\n]/g,'').slice(0,200),url:`/uploads/${filename}`,mime:detected.mime,size:file.size};store.put('media',media);res.status(201).json(media);});
- const dist=resolve('client/dist');if(existsSync(join(dist,'index.html'))){app.use(express.static(dist,{index:false}));app.get('/{*path}',(req,res)=>{if(req.path.startsWith('/api')||req.path.startsWith('/uploads')){res.status(404).json({error:'接口不存在'});return;}res.sendFile(join(dist,'index.html'));});}
+ app.use(['/api','/uploads'],(_req,res)=>{res.status(404).json({error:'接口不存在'});});
+ const dist=options.staticDir?resolve(options.staticDir):resolve('client/dist');if(existsSync(join(dist,'index.html'))){app.use(express.static(dist,{index:false}));app.get('/{*path}',(_req,res)=>{res.sendFile(join(dist,'index.html'));});}
  app.use((error:unknown,_req:Request,res:Response,_next:NextFunction)=>{const status=error instanceof ApiError?error.status:error instanceof multer.MulterError?400:error instanceof z.ZodError?400:400;let message=error instanceof z.ZodError?error.issues.map(i=>i.message).join('；'):error instanceof Error?error.message:'请求失败';for(const saved of store.list<StoredConnection>('connection'))message=redactMessage(message,rawConnection(saved.id)?.config);message=redactMessage(message,{apiKey:generationPrivate().apiKey});res.status(status).json({error:message});});
  return {app,store,queue,close:()=>{queue.stop();store.close();}};
 }

@@ -26,7 +26,7 @@ export class JobQueue {
  private active=new Set<string>();
  private reconciling=new Set<string>();
  private lastChecks=new Map<string,number>();
- constructor(private store:Store,private platforms:Platform[],private service:ConnectorService,private connection:(id:string)=>ConnectionPrivate|undefined,private publicBaseUrl:string){}
+ constructor(private store:Store,private platforms:Platform[],private service:ConnectorService,private connection:(id:string)=>ConnectionPrivate|undefined,private publicBaseUrl:string,private protectedMedia=false){}
  recover(){for(const job of this.store.list<Job>('job'))if(job.status==='running')this.store.put('job',{...job,status:'unconfirmed',message:'程序在发布过程中退出，远端结果未知；请核对平台记录后再确认或重试。',updatedAt:stamp()});}
  start(){this.recover();this.timer=setInterval(()=>void this.tick(),1500);this.timer.unref();void this.tick();}
  stop(){if(this.timer)clearInterval(this.timer);this.timer=undefined;}
@@ -43,7 +43,7 @@ export class JobQueue {
   if(!connection||!connection.enabled||!platform){this.store.put('job',{...job,status:'failed',message:'渠道已删除、停用或平台不存在。',updatedAt:stamp()});return;}
   const running:Job={...job,status:'running',attempts:job.attempts+1,message:'正在执行发布请求',updatedAt:stamp()};this.store.put('job',running);
   try{
-   const result=await this.service.publish(connection,platform,job.snapshot,job.media,{publicBaseUrl:this.publicBaseUrl,readMedia:m=>readMedia(this.store,m),localMediaPath:m=>localMediaPath(this.store,m)});
+   const result=await this.service.publish(connection,platform,job.snapshot,job.media,{publicBaseUrl:this.publicBaseUrl,readMedia:m=>readMedia(this.store,m),localMediaPath:m=>localMediaPath(this.store,m),protectedMedia:this.protectedMedia});
    this.store.put('job',{...running,...result,message:redactMessage(result.message,connection.config),updatedAt:stamp()});
   }catch(error){const uncertain=!!(error as {uncertain?:boolean})?.uncertain;const message=error instanceof Error?error.message:'发布失败';this.store.put('job',{...running,status:uncertain?'unconfirmed':'failed',message:redactMessage(message,connection.config),updatedAt:stamp()});}
  }

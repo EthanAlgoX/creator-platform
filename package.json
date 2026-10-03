@@ -12,8 +12,10 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite --config client/vite.config.ts",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && vite build --config client/vite.config.ts",
+    "build": "npm run typecheck && npm run build:server && vite build --config client/vite.config.ts",
+    "build:server": "tsc -p tsconfig.server.json",
     "start": "tsx server/index.ts",
+    "start:production": "node dist/server/index.js",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts"
   },
   "dependencies": {

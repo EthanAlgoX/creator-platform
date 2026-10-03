@@ -1,0 +1,11 @@
+.git
+.env
+**/.env
+data
+node_modules
+work
+tests
+docs
+.impeccable
+*.log
+.DS_Store
