@@ -152,6 +152,8 @@ components:
 
 ## Overview
 
+English is the default interface language. The header provides an English / 简体中文 selector whose choice persists in the browser. Longer English labels wrap within the existing responsive layout, dates follow the interface locale, and user-authored content keeps its original language. The English wordmark is “Creator Studio”; the Chinese wordmark remains “创作间”.
+
 **Creative North Star: "清楚的个人创作桌面"**
 
 “创作间”把写作、平台审阅和分发安排放在同一张桌面上。白色工作面承载正文，冷灰背景分隔工作区，深墨侧栏固定导航位置。绿色用于主要动作、选中状态和部分通过状态；正文与状态说明保持直接、清楚。

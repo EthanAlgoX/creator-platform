@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 import { AlertCircle, Check, FileText, LoaderCircle, X } from 'lucide-react';
+import { getLocale, t, useI18n } from './i18n';
 
 export function Button({ children, busy = false, className = '', type = 'button', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean }) {
   return <button {...props} type={type} aria-busy={busy || undefined} disabled={props.disabled || busy} className={`button ${className}`}>
@@ -13,7 +14,8 @@ export function Field({ label, hint, children, className = '' }: { label: string
 }
 
 export function ErrorMessage({ children }: { children: ReactNode }) {
-  return <div className="error-message" role="alert"><AlertCircle size={17} aria-hidden="true" /><span>{children}</span></div>;
+  useI18n();
+  return <div className="error-message" role="alert"><AlertCircle size={17} aria-hidden="true" /><span>{typeof children === 'string' ? t(children) : children}</span></div>;
 }
 
 export function Badge({ children, kind = '' }: { children: ReactNode; kind?: string }) {
@@ -25,6 +27,7 @@ export function EmptyState({ title, description, action, icon }: { title: string
 }
 
 export function Modal({ title, children, close }: { title: string; children: ReactNode; close: () => void }) {
+  useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -50,12 +53,12 @@ export function Modal({ title, children, close }: { title: string; children: Rea
     const box = event.currentTarget.getBoundingClientRect();
     if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
   }}>
-      <div className="modal-heading"><h2>{title}</h2><button className="icon-button" aria-label="关闭对话框" onClick={close}><X size={20} /></button></div>{children}
+      <div className="modal-heading"><h2>{title}</h2><button className="icon-button" aria-label={t('关闭对话框')} onClick={close}><X size={20} /></button></div>{children}
   </dialog>;
 }
 
 export function formatDate(date: string, timezone = 'Asia/Shanghai') {
-  try { return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: timezone }).format(new Date(date)); }
+  try { return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-US' : 'zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: timezone }).format(new Date(date)); }
   catch { return date; }
 }
 

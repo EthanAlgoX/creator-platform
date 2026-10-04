@@ -10,4 +10,15 @@ test('original text remains intact when a short platform version is condensed',(
 test('HTML export sanitizes executable markup, dangerous URLs and inline handlers',()=>{const html=toHtml('# 标题\n\n<script>alert(1)</script>\n\n<img src="https://example.com/photo.png" onerror="alert(1)">\n\n[链接](javascript:alert(1))\n\n<div style="position:fixed">正文</div>');assert.ok(!html.includes('<script'));assert.ok(!html.includes('onerror'));assert.ok(!html.includes('javascript:'));assert.ok(!html.includes('position:fixed'));assert.ok(html.includes('https://example.com/photo.png'));});
 test('source revision and profile forbidden words prevent invalid approval',()=>{const c=content('禁止用词 经验');const p=platformById('zhihu');const profile:Profile={id:uid(),name:'账号',audience:'读者',tone:'自然',language:'中文',description:'',forbiddenWords:['禁止用词'],updatedAt:stamp()};const v=ruleVariant(c,p,profile);assert.ok(v.issues.some(i=>i.message.includes('禁用词')));const updated={...c,source:'新的原稿'};assert.notEqual(revision(c),revision(updated));assert.ok(validateVariant(v,p,updated).some(i=>i.message.includes('原稿已修改')));});
 test('Bluesky counts graphemes rather than UTF-16 code units',()=>{assert.equal(countFor(platformById('bluesky'),'👨‍👩‍👧‍👦'),1);});
+test('English source and profile language codes use English additions without rewriting the source',()=>{
+ const c={...content('Write one reading note each day.'),title:'Reading notes'};
+ const profile:Profile={id:uid(),name:'Writer',audience:'Readers',tone:'Clear',language:'en',description:'',forbiddenWords:[],updatedAt:stamp()};
+ for(const selected of [undefined,profile,{...profile,language:'en-US'},{...profile,language:'English'}]){
+  assert.match(ruleVariant(c,platformById('reddit'),selected).body,/What has your experience been/);
+  assert.doesNotMatch(ruleVariant(c,platformById('youtube'),selected).body,/[\u4e00-\u9fff]/);
+ }
+ assert.match(ruleVariant(c,platformById('reddit'),{...profile,language:'zh-CN'}).body,/不同看法/);
+ assert.equal(ruleVariant(c,platformById('reddit'),{...profile,language:'fr'}).body,c.source);
+ assert.equal(c.source,'Write one reading note each day.');
+});
 test('approval validates the exact message bodies used by each connector',()=>{const c=content();const reddit=ruleVariant(c,platformById('reddit'));assert.ok(validateVariant({...reddit,body:'',thread:['hidden unused text']},platformById('reddit'),c).some(i=>i.severity==='error'&&i.message.includes('不能为空')));const x=ruleVariant(c,platformById('x'));assert.ok(validateVariant({...x,thread:['valid first post','  ']},platformById('x'),c).some(i=>i.severity==='error'&&i.message.includes('第 2 条串帖不能为空')));});

@@ -48,12 +48,15 @@ export function validateVariant(variant:Variant,platform:Platform,content:Conten
 }
 export function ruleVariant(content:Content,platform:Platform,profile?:Profile):Variant {
  const original=content.source.trim();let body=original;const title=cut(content.title||original.split(/\n|[。！？.!?]/)[0],platform.titleLimit||100);
+ const requestedLanguage=profile?.language.trim().toLowerCase();
+ const english=requestedLanguage ? /^(en(?:-[a-z]+)?|english|英文|英语)$/.test(requestedLanguage) : !/[\u4e00-\u9fff]/.test(original);
+ const chinese=requestedLanguage ? /^(zh(?:-[a-z]+)?|chinese|中文|简体中文|繁体中文)$/.test(requestedLanguage) : !english;
  let thread:string[]=[];let tags:string[]=[];
  if(platform.id==='x'){thread=splitThread(original,platform);body=thread[0]||'';}
  else if(platform.id==='xiaohongshu'){body=original.replace(/\n{3,}/g,'\n\n').replace(/([。！？])(?=\S)/g,'$1\n\n');body=cut(body,960);const hashtags=[...original.matchAll(/#([^\s#]+)/g)].map(m=>m[1]);tags=[...new Set(hashtags)].slice(0,5);}
- else if(platform.id==='reddit'&&!/[?？]\s*$/.test(body)){body=`${body}\n\n${profile?.language==='English'?'What has your experience been?':'你有什么相关经验或不同看法？'}`;}
+ else if(platform.id==='reddit'&&!/[?？]\s*$/.test(body)&&(english||chinese)){body=`${body}\n\n${english?'What has your experience been?':'你有什么相关经验或不同看法？'}`;}
  else if(platform.id==='linkedin'){body=`${title}\n\n${body}`;}
- else if(platform.category==='video'){body=`${title}\n\n${body}\n\n${profile?.language==='English'?'Video notes: keep the opening concise and demonstrate the key point.':'视频说明：开场直接提出主题，正文展示关键步骤，结尾回到核心观点。'}`;}
+ else if(platform.category==='video'){body=`${title}\n\n${body}${english||chinese?`\n\n${english?'Video notes: keep the opening concise and demonstrate the key point.':'视频说明：开场直接提出主题，正文展示关键步骤，结尾回到核心观点。'}`:''}`;}
  if(platform.id!=='x'&&countFor(platform,body)>platform.bodyLimit)body=cut(body,platform.bodyLimit,platform);
  const variant:Variant={id:uid(),contentId:content.id,platformId:platform.id,title,body,tags,thread,source:'rules',issues:[],approved:false,updatedAt:stamp(),sourceRevision:revision(content)};
  if(platform.category==='article')variant.html=toHtml(body);

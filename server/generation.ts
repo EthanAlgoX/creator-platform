@@ -10,7 +10,7 @@ export async function generateAI(content:Content,platforms:Platform[],profile:Pr
  validateGeneration(config);
  // Keep each structured response small; the API commits all batches only after success.
  if(platforms.length>6){const output:Variant[]=[];for(let i=0;i<platforms.length;i+=6)output.push(...await generateAI(content,platforms.slice(i,i+6),profile,config));return output;}
- const prompt={source:{title:content.title,body:content.source},profile:profile?{name:profile.name,audience:profile.audience,tone:profile.tone,language:profile.language,description:profile.description,forbiddenWords:profile.forbiddenWords}:undefined,
+ const prompt={source:{title:content.title,body:content.source},outputLanguage:profile?.language||'Use the same language as the source draft. Do not translate it unless the writing profile requests another language.',profile:profile?{name:profile.name,audience:profile.audience,tone:profile.tone,language:profile.language,description:profile.description,forbiddenWords:profile.forbiddenWords}:undefined,
   platforms:platforms.map(p=>({id:p.id,name:p.name,titleLimit:p.titleLimit,bodyLimit:p.bodyLimit,style:p.recommendedTone,requiredMedia:p.requiredMedia})),
   outputSchema:{variants:[{platformId:'one requested id',title:'string',body:'string',tags:['tag without #'],thread:['only for X, each within 280 weighted characters']}]}};
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),90000);

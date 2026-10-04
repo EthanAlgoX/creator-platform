@@ -1,4 +1,5 @@
 import type { Connection, Content, Media, Settings, Variant } from './api';
+import { t } from './i18n';
 
 export type Composer = { id?: string; title: string; source: string; profileId: string; media: Media[] };
 export function isSourceDirty(composer: Composer, saved?: Content): boolean {
@@ -16,9 +17,9 @@ export function needsSourceReview(variant: Variant): boolean {
   return variant.issues.some(i => i.severity === 'error' && i.message.includes('原稿'));
 }
 export function accountState(connection: Connection): string {
-  if (!connection.enabled) return '已停用';
-  if (!connection.configured) return '参数不完整';
-  if (!connection.lastTest) return '参数齐全 · 未检查';
-  if (!connection.lastTest.ok) return '检查失败';
-  return connection.lastTest.scope === 'configuration' ? '参数检查通过' : '连接检查通过';
+  if (!connection.enabled) return t('已停用');
+  if (!connection.configured) return t('参数不完整');
+  if (!connection.lastTest) return t('参数齐全 · 未检查');
+  if (!connection.lastTest.ok) return t('检查失败');
+  return t(connection.lastTest.scope === 'configuration' ? '参数检查通过' : '连接检查通过');
 }
