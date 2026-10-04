@@ -4,6 +4,8 @@ Turn one source draft into reviewed, platform-specific content, then publish, sa
 
 **English** · [简体中文](./README.zh-CN.md)
 
+[Open the hosted workspace](https://myaistock.top/creator-platform/) · Sign-in required
+
 ![Creator Studio: source editor, writing profile, platform selection, and the three-stage creation workflow](./docs/images/creator-platform-workbench-en.jpg)
 
 A personal workspace that runs locally or behind an authenticated server deployment. The interface defaults to English; switch between **English** and **简体中文**, with your choice saved in the browser. Interface language is separate from the output language in your writing profile.
@@ -73,7 +75,9 @@ Authenticated server uploads are private. Routes that depend on third parties do
 - [Deployment guide](./deploy/README.md) — protected server setup and operations; Chinese.
 - [Reference analysis](./docs/REFERENCE-ANALYSIS.md) — source projects, implementation choices, and license boundaries; Chinese.
 - [English-first validation](./docs/LOCALIZATION-VALIDATION.md) — bilingual UI, responsive layout, content preservation, and 139 passing tests; English.
-- [Validation record](./docs/VALIDATION.md) and [server deployment record](./docs/SERVER-DEPLOYMENT-20261003.md) — dated evidence and remaining live-account checks; Chinese.
+- [Production update record](./docs/SERVER-DEPLOYMENT-20261004.md) — deployed English-first version, public verification, and rollback basis; English.
+- [Validation record](./docs/VALIDATION.md) — earlier workflow checks and remaining live-account boundaries; Chinese.
+- [Initial deployment history](./docs/SERVER-DEPLOYMENT-20261003.md) — the first server rollout and its dated evidence; Chinese.
 
 ## Validation
 

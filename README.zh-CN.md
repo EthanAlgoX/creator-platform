@@ -4,6 +4,8 @@
 
 [English](./README.md) · **简体中文**
 
+[打开在线工作台](https://myaistock.top/creator-platform/) · 需要登录
+
 ![创作者工作台：原稿编辑器、写作画像、平台选择，以及写原稿、适配与审阅、分发三个阶段](./docs/images/creator-platform-workbench.jpg)
 
 一个支持本地运行与受认证服务器部署的个人工作台。界面默认使用 English，可切换 **English / 简体中文**，选择保存在浏览器中。界面语言与写作画像中的内容输出语言相互独立。
@@ -73,7 +75,9 @@ Quora、Qiita、Zenn、note 当前没有专用发布集成，可复制、导出�
 - [部署说明](./deploy/README.md)：认证服务器配置与运维；中文。
 - [参考分析](./docs/REFERENCE-ANALYSIS.md)：参考源码、实现取舍与许可证边界；中文。
 - [双语版本验证](./docs/LOCALIZATION-VALIDATION.md)：语言切换、响应式布局、内容保留与 139 项测试；英文。
-- [验证记录](./docs/VALIDATION.md) 与 [服务器部署记录](./docs/SERVER-DEPLOYMENT-20261003.md)：注明日期的证据及真实账号验收边界；中文。
+- [本次生产更新记录](./docs/SERVER-DEPLOYMENT-20261004.md)：已部署的英文优先版本、公网验证与回滚依据；英文。
+- [验证记录](./docs/VALIDATION.md)：此前工作流检查及真实账号验收边界；中文。
+- [首次部署历史](./docs/SERVER-DEPLOYMENT-20261003.md)：首次服务器部署及注明日期的证据；中文。
 
 ## 验证
 
