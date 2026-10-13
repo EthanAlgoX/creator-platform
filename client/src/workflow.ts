@@ -1,4 +1,5 @@
-import type { Connection, Content, Media, Settings, Variant } from './api';
+import {variantLanguage} from '../../server/variant-options.js';
+import type { Connection, Content, Media, Profile, Settings, Variant } from './api';
 import { t } from './i18n';
 
 export type Composer = { id?: string; title: string; source: string; profileId: string; media: Media[] };
@@ -6,8 +7,8 @@ export function isSourceDirty(composer: Composer, saved?: Content): boolean {
   if (!saved) return Boolean(composer.title || composer.source || composer.profileId || composer.media.length);
   return composer.title !== saved.title || composer.source !== saved.source || composer.profileId !== (saved.profileId || '') || JSON.stringify(composer.media) !== JSON.stringify(saved.media);
 }
-export function generationTargets(selected: string[], current: Variant[], replace = false): string[] {
-  const existing = new Set(current.map(v => v.platformId));
+export function generationTargets(selected: string[], current: Variant[], replace = false, language?:string, profile?:Profile): string[] {
+  const existing = new Set(current.filter(v=>!language||variantLanguage(v,profile)===language).map(v => v.platformId));
   return [...new Set(selected)].filter(id => replace || !existing.has(id));
 }
 export function aiReady(settings: Settings): boolean {

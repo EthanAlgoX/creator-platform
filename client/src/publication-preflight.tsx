@@ -1,0 +1,12 @@
+import type {PublicationCheck} from '../../server/publication-check.js';
+import {useState} from 'react';
+import {t} from './i18n';
+import {languageLabel} from './variant-controls';
+import {Badge,Button,ErrorMessage,Modal,formatDate,jobLabels} from './ui';
+import {mediaUrl} from './urls';
+
+export function PublicationPreflight({checks,timezone,scheduled,busy,error,close,confirm}:{checks:PublicationCheck[];timezone:string;scheduled:boolean;busy:boolean;error:string;close:()=>void;confirm:(allowDuplicate:boolean)=>void}){
+ const [allowDuplicate,setAllowDuplicate]=useState(false);const duplicates=checks.some(c=>c.previous.length>0);const blocked=checks.some(c=>c.errors.length>0);
+ const routeLabel={publish:'提交发布',draft:'保存平台草稿',browser:'交接到浏览器',custom:'提交到自建服务'};
+ return <Modal title={t('发送前核对')} close={()=>{if(!busy)close();}}><p className="management-hint">{t('核对这次发送的具体版本、账号和图片。连接检查说明当前证据范围，实际结果以平台回执为准。')}</p>{error&&<ErrorMessage>{error}</ErrorMessage>}<div className="preflight-targets">{checks.map(c=><section key={`${c.variantId}:${c.connectionId}`}><h3>{c.title}</h3><p><strong>{c.accountName}</strong> · {languageLabel(c.language)} · <Badge>{t(routeLabel[c.route])}</Badge></p><p className="field-hint">{c.lastTest?t('上次连接检查：{time} · {scope}',{time:formatDate(c.lastTest.at,timezone),scope:t(c.lastTest.scope==='configuration'?'仅检查参数':'凭据检查') }):t('尚无连接检查记录')}</p>{c.media.length>0&&<ol className="preflight-media">{c.media.map(m=><li key={m.id}>{m.mime.startsWith('image/')&&<img src={mediaUrl(m.url)} alt=""/>}<span>{m.name}</span></li>)}</ol>}{c.errors.map((message,i)=><ErrorMessage key={i}>{t(message)}</ErrorMessage>)}{c.warnings.map((message,i)=><p key={i} className="preflight-warning">{t(message)}</p>)}{c.previous.length>0&&<div><p className="field-hint">{t('已有 {count} 条相同内容记录',{count:c.previous.length})}</p><ul>{c.previous.map(j=><li key={j.id}>{j.accountName} · {t(jobLabels[j.status])} {j.url&&/^https?:\/\//.test(j.url)&&<a href={j.url} target="_blank" rel="noreferrer">{t('查看远端')}</a>}</li>)}</ul></div>}</section>)}</div>{duplicates&&<label className="checkbox-row"><input type="checkbox" checked={allowDuplicate} onChange={e=>setAllowDuplicate(e.target.checked)} disabled={busy}/>{t('我已核对已有记录，仍要再次发送相同内容')}</label>}<div className="management-form-actions"><Button onClick={close} disabled={busy}>{t('返回调整')}</Button><Button className="primary" onClick={()=>confirm(allowDuplicate)} busy={busy} disabled={busy||blocked||duplicates&&!allowDuplicate}>{t(scheduled?'确认并创建预约任务':'确认并创建分发任务')}</Button></div></Modal>;
+}

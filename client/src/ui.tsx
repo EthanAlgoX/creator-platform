@@ -64,7 +64,7 @@ export function formatDate(date: string, timezone = 'Asia/Shanghai') {
 
 export const jobLabels: Record<string, string> = {
   queued: '等待发布', scheduled: '已排期', running: '发布中', published: '已发布',
-  drafted: '已保存草稿', failed: '失败', unconfirmed: '结果待确认', needs_action: '待手动处理', cancelled: '已取消',
+  submitted: '平台审核中', blocked: '未发送 · 需处理', drafted: '已保存草稿', failed: '失败', unconfirmed: '结果待确认', needs_action: '待手动处理', cancelled: '已取消',
 };
 
-export const jobKind = (status: string) => status === 'published' ? 'success' : status === 'failed' ? 'danger' : ['unconfirmed', 'needs_action'].includes(status) ? 'warning' : '';
+export const jobKind = (status: string) => status === 'published' ? 'success' : status === 'failed' ? 'danger' : ['unconfirmed', 'needs_action', 'blocked'].includes(status) ? 'warning' : '';

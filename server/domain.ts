@@ -1,4 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto';
+import {variantMedia,normalizeLanguage} from './variant-options.js';
 import {marked} from 'marked';
 import sanitizeHtml from 'sanitize-html';
 import type {Content,Platform,Profile,Variant,Issue,Media} from './types.js';
@@ -28,6 +29,14 @@ export function toHtml(markdown:string):string {
 }
 export function validateVariant(variant:Variant,platform:Platform,content:Content,profile?:Profile):Issue[] {
  const issues:Issue[]=[];const error=(message:string)=>issues.push({severity:'error',message});
+ let media:Media[]=[];try{media=variantMedia(variant,content);}catch(e){error((e as Error).message);}
+ const inlineImages=[...toHtml(variant.body).matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(m=>m[1]);
+ if(inlineImages.some(url=>url.startsWith('/uploads/')&&!media.some(m=>m.url===url&&m.mime.startsWith('image/'))))error('正文引用了未关联的图片，请在原稿素材中添加对应图片');
+ if(platform.id==='xiaohongshu'){
+  if(media.filter(m=>m.mime.startsWith('image/')).length>18)error('小红书图文最多支持 18 张图片');
+  const withTags=[variant.body,...variant.tags.map(tag=>`#${tag.replace(/^#/,'')}`)].join('\n');
+  if(countFor(platform,withTags)>platform.bodyLimit&&countFor(platform,variant.body)<=platform.bodyLimit)error('正文与话题标签合计超过平台字数限制');
+ }
  if(platform.titleLimit&&length(variant.title)>platform.titleLimit)error(`标题超过 ${platform.titleLimit} 字符`);
  if(platform.titleLimit&&!variant.title.trim())error('该平台需要标题');
  const texts=platform.id==='x'&&variant.thread.length?variant.thread:[variant.body];
@@ -36,9 +45,9 @@ export function validateVariant(variant:Variant,platform:Platform,content:Conten
   if(!text.trim())error(`${label}不能为空`);
   if(countFor(platform,text)>platform.bodyLimit)error(`${label}超过 ${platform.bodyLimit} 字符限制`);
  }
- if(platform.requiredMedia==='image'&&!content.media.some(m=>m.mime.startsWith('image/')))error('该平台需要至少一张图片');
- if(platform.requiredMedia==='video'&&!content.media.some(m=>m.mime.startsWith('video/')))error('该平台需要视频素材');
- if(platform.requiredMedia==='any'&&!content.media.some(m=>/^(image|video)\//.test(m.mime)))error('该平台需要图片或视频素材');
+ if(platform.requiredMedia==='image'&&!media.some(m=>m.mime.startsWith('image/')))error('该平台需要至少一张图片');
+ if(platform.requiredMedia==='video'&&!media.some(m=>m.mime.startsWith('video/')))error('该平台需要视频素材');
+ if(platform.requiredMedia==='any'&&!media.some(m=>/^(image|video)\//.test(m.mime)))error('该平台需要图片或视频素材');
  if(profile)for(const word of profile.forbiddenWords)if(word&&`${variant.title}\n${variant.body}\n${variant.thread.join('\n')}`.includes(word))error(`包含画像中的禁用词：${word}`);
  if(variant.sourceRevision&&variant.sourceRevision!==revision(content))error('原稿已修改，请重新生成或保存这个平台版本');
  if(platform.id==='x')issues.push({severity:'warning',message:'X 字数采用保守加权估计；实际发布以平台校验为准。'});
@@ -58,7 +67,7 @@ export function ruleVariant(content:Content,platform:Platform,profile?:Profile):
  else if(platform.id==='linkedin'){body=`${title}\n\n${body}`;}
  else if(platform.category==='video'){body=`${title}\n\n${body}${english||chinese?`\n\n${english?'Video notes: keep the opening concise and demonstrate the key point.':'视频说明：开场直接提出主题，正文展示关键步骤，结尾回到核心观点。'}`:''}`;}
  if(platform.id!=='x'&&countFor(platform,body)>platform.bodyLimit)body=cut(body,platform.bodyLimit,platform);
- const variant:Variant={id:uid(),contentId:content.id,platformId:platform.id,title,body,tags,thread,source:'rules',issues:[],approved:false,updatedAt:stamp(),sourceRevision:revision(content)};
+ const variant:Variant={id:uid(),contentId:content.id,platformId:platform.id,title,body,tags,thread,source:'rules',issues:[],approved:false,updatedAt:stamp(),sourceRevision:revision(content),language:profile?.language?normalizeLanguage(profile.language):undefined};
  if(platform.category==='article')variant.html=toHtml(body);
  variant.issues=validateVariant(variant,platform,content,profile);
  if(platform.id!=='x'&&countFor(platform,original)>platform.bodyLimit)variant.issues.push({severity:'warning',message:'规则适配为满足长度保留了原稿前半部分，请检查信息是否完整，或使用 AI 改写。'});

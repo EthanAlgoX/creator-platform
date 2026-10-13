@@ -1,3 +1,4 @@
+import {connectorMediaIssues} from './publication-check.js';
 import { createHash, createHmac } from 'node:crypto';
 import {isAbsolute} from 'node:path';
 import {getEnterpriseDefinitions,isEnterprisePlatform,validateEnterprise,testEnterprise,publishEnterprise} from './enterprise.js';
@@ -592,6 +593,7 @@ export async function publish(connection: ConnectionPrivate, platform: Platform,
   requireConnection(connection, platform);
   if (!connection.enabled) throw new ConnectorError('连接已停用。');
   if (variant.platformId !== platform.id) throw new ConnectorError('内容版本与平台不匹配。');
+  const mediaIssues=connectorMediaIssues(connection,media,!!context.protectedMedia);if(mediaIssues.length)throw new ConnectorError(mediaIssues.join('；'));
   const c = connection.config;
   if (connection.connector === 'native' && isEnterprisePlatform(platform.id)) return publishEnterprise(connection, platform, variant, media, context);
   if (connection.connector === 'multipost') return { status: 'needs_action', message: '请在前台发布队列发送到 MultiPost 扩展，并在目标网站完成核对。' };

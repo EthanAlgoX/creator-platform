@@ -20,11 +20,15 @@ A personal workspace that runs locally or behind an authenticated server deploym
 
 ## Core features
 
-- **One source, separate versions.** Keep a content library and reusable writing profiles. Generate missing versions without overwriting existing edits; regeneration requires explicit replacement.
+- **One source, separate platform and language versions.** Keep Chinese and English X versions under one source and review each independently. Regeneration replaces only the selected language. Rules do not translate; use AI or copy a version for editing.
+- **Media per version.** Select and order images independently, insert images into article text, and retain the selection in exports and task snapshots. Changing images or their order clears approval.
+- **Review the delivery before queuing.** Inspect each version's language, account name, images and connection-check scope. Failed checks, incompatible media and active-task collisions block delivery. Matching publication records require an explicit decision to send again.
 - **Rules or your own AI service.** Rules-based adaptation works without a model. AI uses a configured Chat Completions-compatible service and processes up to six platforms per batch.
 - **Review before sending.** Edit titles, bodies, tags, and X threads; preview article HTML; check platform constraints. Source or profile changes require another review.
 - **A searchable platform directory.** Filter 102 adaptation targets by region, format, and available publishing route, with requirements and experimental adapters identified.
 - **Accountable distribution.** Each account gets an immutable task snapshot, schedule, and result. Drafts, browser handoffs, and uncertain outcomes stay distinct from published content. Uncertain publishing requests are never automatically resent.
+- **Browser publication records.** Record an approved version's actual account, post link, screenshot evidence, review status, or blocker without setting up an API connection. Records never send content; verified updates keep result history.
+- **Portable article images.** Review attached images and export HTML with uploaded images embedded, retaining inline positions and appending unused image attachments once.
 - **Portable content and private credentials.** Export Markdown, article HTML, or JSON. Store account secrets and model keys encrypted in SQLite, with browser draft backup and explicit server-side saves.
 
 ## Get started
@@ -77,6 +81,7 @@ Authenticated server uploads are private. Routes that depend on third parties do
 - [English-first validation](./docs/LOCALIZATION-VALIDATION.md) — bilingual UI, responsive layout, content preservation, and 139 passing tests; English.
 - [Production update record](./docs/SERVER-DEPLOYMENT-20261004.md) — deployed English-first version, public verification, and rollback basis; English.
 - [Validation record](./docs/VALIDATION.md) — earlier workflow checks and remaining live-account boundaries; Chinese.
+- [Publishing workflow](./docs/PUBLISHING-WORKFLOW.md) — multilingual review, per-version images, delivery checks, portable exports, and result records; Chinese.
 - [Initial deployment history](./docs/SERVER-DEPLOYMENT-20261003.md) — the first server rollout and its dated evidence; Chinese.
 
 ## Validation
@@ -87,7 +92,7 @@ npm test
 npm run build
 ```
 
-Automated checks use temporary SQLite databases, mock HTTP services, and fake browser messages. They verify workflow and protocol behavior; they do not prove that a real account has publishing permission. No real social-platform posts were made during development validation.
+Automated checks use temporary SQLite databases, mock HTTP services, and fake browser messages. They verify workflow and protocol behavior; they do not prove that a real account has publishing permission. Browser/manual result records are separate from connector permission checks; operational data stays in the local workspace.
 
 ## Data and backups
 

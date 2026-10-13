@@ -1,3 +1,4 @@
+import {normalizeLanguage} from './variant-options.js';
 import {revision,stamp,uid,toHtml,validateVariant} from './domain.js';
 import type {Content,Platform,Profile,Variant} from './types.js';
 
@@ -30,7 +31,7 @@ export async function generateAI(content:Content,platforms:Platform[],profile:Pr
  for(const platform of platforms){const found=parsed.variants.filter((v:any)=>v?.platformId===platform.id);if(found.length!==1)throw new Error(`模型没有返回唯一的 ${platform.name} 版本，请重试`);
   const value=found[0] as any;if(typeof value.title!=='string'||typeof value.body!=='string')throw new Error(`${platform.name} 的模型输出格式有误`);
   const strings=(input:unknown):string[]=>Array.isArray(input)?input.filter((v):v is string=>typeof v==='string').slice(0,100):[];
-  const variant:Variant={id:uid(),contentId:content.id,platformId:platform.id,title:value.title.slice(0,2000),body:value.body.slice(0,100000),tags:strings(value.tags),thread:platform.id==='x'?strings(value.thread):[],source:'ai',issues:[],approved:false,updatedAt:stamp(),sourceRevision:revision(content)};
+  const variant:Variant={id:uid(),contentId:content.id,platformId:platform.id,title:value.title.slice(0,2000),body:value.body.slice(0,100000),tags:strings(value.tags),thread:platform.id==='x'?strings(value.thread):[],source:'ai',issues:[],approved:false,updatedAt:stamp(),sourceRevision:revision(content),language:profile?.language?normalizeLanguage(profile.language):undefined};
   if(platform.category==='article')variant.html=toHtml(variant.body);variant.issues=validateVariant(variant,platform,content,profile);out.push(variant);
  }
  return out;

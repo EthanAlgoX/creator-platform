@@ -315,3 +315,10 @@ html[lang='en'] .brand small { font-size: 11px; }
   .nav-item { min-height: 46px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.preview-media { display: grid; gap: 20px; padding: 20px 24px; }
+.preview-media:empty { display: none; }
+.preview-media figure { margin: 0; min-width: 0; }
+.preview-media img { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+.preview-media figcaption { overflow-wrap: anywhere; margin-top: 8px; color: #526277; font-size: 12px; }
+
+@media(max-width:600px) { .review-overview { display:grid; grid-template-columns:1fr 1fr; } .review-overview > span { grid-column:1 / -1; } }
